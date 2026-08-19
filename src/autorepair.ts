@@ -5,8 +5,6 @@ import { repairFolds, type RepairResult } from './repair';
 import type { FoldRageSettings } from './settings';
 
 const LOG_PREFIX = '[FoldRage]';
-/** Development-only console output. Off in released builds. */
-const DEBUG = false;
 
 /**
  * AUTOMATIC FOLD REPAIR.
@@ -132,14 +130,6 @@ export class FoldAutoRepair {
 
 		this.repairs++;
 		this.foldsRepaired += result.repaired;
-		if (DEBUG) {
-			console.log(
-			`${LOG_PREFIX} repaired ${result.repaired} of ${result.total} fold range(s) in ` +
-				`${entry.filePath ?? '(unknown file)'} — trigger: ${trigger}. ` +
-				`Folded coverage ${Math.round(result.foldedFractionBefore * 100)}% → ` +
-				`${Math.round(result.foldedFractionAfter * 100)}%. Document unchanged.`,
-			);
-		}
 		if (manual || this.settings().showNotifications) {
 			new Notice(`Fold Rage repaired ${result.repaired} fold${result.repaired === 1 ? '' : 's'}.`, 5000);
 		}

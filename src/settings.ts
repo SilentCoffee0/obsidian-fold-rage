@@ -85,9 +85,9 @@ export class FoldRageSettingTab extends PluginSettingTab {
 
 		if (this.plugin.settings.showSessionCounter) {
 			const { repairs, folds } = this.plugin.sessionStats();
-			containerEl.createEl('p', {
-				text: `Folds repaired this session: ${folds} (across ${repairs} repair${repairs === 1 ? '' : 's'})`,
-			});
+			new Setting(containerEl)
+				.setName('Folds repaired this session')
+				.setDesc(`${folds} fold${folds === 1 ? '' : 's'} across ${repairs} repair${repairs === 1 ? '' : 's'}. Resets when Obsidian restarts.`);
 		}
 	}
 }

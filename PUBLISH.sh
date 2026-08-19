@@ -5,8 +5,8 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 REPO_NAME="obsidian-fold-rage"
-TAG="v0.1.0"
-ZIP="dist/fold-rage-0.1.0.zip"
+TAG="0.1.1"
+ZIP="dist/fold-rage-0.1.1.zip"
 
 echo "==> Checking GitHub CLI authentication"
 gh auth status
@@ -50,7 +50,7 @@ gh release create "$TAG" \
   main.js \
   manifest.json \
   "$ZIP" \
-  --title "Fold Rage v0.1.0 — Stay in your range" \
+  --title "Fold Rage 0.1.1 — Stay in your range" \
   --notes-file RELEASE_NOTES.md
 
 echo

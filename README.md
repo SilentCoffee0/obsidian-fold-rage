@@ -113,8 +113,11 @@ There is nothing to do. Automatic repair is on by default.
 One command exists as a fallback, for a case the automatic trigger misses:
 
 ```
-Fold Rage: Repair folds now
+Repair folds now
 ```
+
+Obsidian shows it as **Fold Rage: Repair folds now** in the command palette — it adds the plugin name
+itself, so the command does not repeat it.
 
 It runs exactly the same conservative repair as the automatic path.
 
@@ -201,6 +204,15 @@ What the evidence supports is an invariant:
 
 [`FINDINGS.md`](FINDINGS.md) has the technical detail, including the full candidate matrix and which
 common refresh fixes were tried against a genuinely broken editor and failed.
+
+## Compatibility
+
+Verified against Obsidian **1.5.8**, **1.12.4** and **1.13.7** on macOS, by running the full
+verification suite above against each. `minAppVersion` is set to the oldest version actually tested
+rather than a guess.
+
+Desktop and mobile: the plugin uses no Node or Electron APIs, so `isDesktopOnly` is `false`. The
+automated verification runs on desktop only, since it drives a real desktop Obsidian.
 
 ## License
 

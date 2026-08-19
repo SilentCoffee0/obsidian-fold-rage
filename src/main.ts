@@ -4,6 +4,12 @@ import { EditorRegistry, registryExtension, setActiveRegistry, type EditorEntry 
 import { FoldAutoRepair } from './autorepair';
 
 /**
+ * Replaced with the literal `false` by esbuild in released builds, so the test
+ * API and its helpers are removed by dead-code elimination and never ship.
+ */
+declare const INCLUDE_TEST_API: boolean;
+
+/**
  * Fold Rage — stay in your range.
  *
  * An unofficial workaround for an Obsidian Live Preview bug where restored fold
@@ -65,15 +71,27 @@ export default class FoldRagePlugin extends Plugin {
 		this.addCommand({
 			id: 'repair-folds-now',
 			name: 'Repair folds now',
-			callback: () => {
-				const entry = this.activeEntry();
+			// The command needs an open Markdown editor, so it uses a check callback
+			// and hides itself when there is none. No default hotkey is set.
+			editorCheckCallback: (checking, _editor, ctx) => {
+				const view = ctx instanceof MarkdownView ? ctx : null;
+				if (checking) return !!view;
+				const entry = this.entryForView(view);
 				if (entry) this.autoRepair.repairNow(entry);
+				return true;
 			},
 		});
 
 		this.addSettingTab(new FoldRageSettingTab(this.app, this));
 
-		if (this.settings.enableTestApi) void this.installTestApi();
+		// Compiled out of released builds entirely: with INCLUDE_TEST_API defined as
+		// the literal `false`, esbuild removes this branch and never bundles
+		// ./testing at all. See esbuild.config.mjs.
+		if (INCLUDE_TEST_API && this.settings.enableTestApi) {
+			void import('./testing').then((m) => {
+				this.api = m.createTestApi(this, this.registry, this.autoRepair);
+			});
+		}
 	}
 
 	onunload(): void {
@@ -88,14 +106,16 @@ export default class FoldRagePlugin extends Plugin {
 	}
 
 	/** The Markdown editor the user is looking at — never a guess at another pane. */
-	private activeEntry(notify = true): EditorEntry | null {
-		const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-		const leaf = view?.leaf ?? this.app.workspace.activeLeaf ?? null;
-		let entry = this.registry.forLeaf(leaf);
-		if (!entry && view) entry = this.registry.registerFromDom(view.contentEl);
-		if (!entry && notify) new Notice('Fold Rage: no editor found for the active pane.', 5000);
+	entryForView(view: MarkdownView | null): EditorEntry | null {
+		if (!view) return null;
+		let entry = this.registry.forLeaf(view.leaf);
+		if (!entry) entry = this.registry.registerFromDom(view.contentEl);
 		if (entry) this.registry.refreshContext(entry, entry.view.state);
 		return entry;
+	}
+
+	activeEntry(): EditorEntry | null {
+		return this.entryForView(this.app.workspace.getActiveViewOfType(MarkdownView));
 	}
 
 	private scheduleForLeaf(leaf: WorkspaceLeaf | null, trigger: string): void {
@@ -105,73 +125,7 @@ export default class FoldRagePlugin extends Plugin {
 	}
 
 	private currentLeaf(): WorkspaceLeaf | null {
-		const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-		if (view) return view.leaf;
-		const active = this.app.workspace.activeLeaf;
-		return active?.view instanceof MarkdownView ? active : null;
-	}
-
-	/**
-	 * Only for this repository's automated verification, and only when the
-	 * undocumented `enableTestApi` flag is set. Loaded lazily so the helpers stay
-	 * out of the normal runtime path.
-	 */
-	private async installTestApi(): Promise<void> {
-		const { auditFolds, listFoldRanges } = await import('./repair');
-		const { foldLines, simulateFoldCorruption, makeShorterThanStructural } = await import('./testing');
-		this.api = {
-			audit: (editorId?: string) => {
-				const entry = editorId ? this.registry.getById(editorId) : this.activeEntry(false);
-				if (!entry) return null;
-				const a = auditFolds(entry.view.state);
-				const v = entry.view;
-				return {
-					editorId: entry.id,
-					file: entry.filePath,
-					mode: entry.markdownMode,
-					folds: a.total,
-					overReaching: a.corrections.length,
-					undeterminable: a.undeterminable,
-					foldedFraction: a.foldedFraction,
-					foldRanges: listFoldRanges(v.state).map((r) => [r.from, r.to]),
-					docLength: v.state.doc.length,
-					docHash: hash(v.state.doc.toString()),
-					selection: v.state.selection.ranges.map((r) => [r.from, r.to]),
-					renderedLines: v.contentDOM.querySelectorAll(':scope > .cm-line').length,
-					visibleRanges: v.visibleRanges.length,
-					contentHeight: Math.round(v.contentHeight * 100) / 100,
-				};
-			},
-			editors: () =>
-				this.registry.all().map((e) => {
-					this.registry.refreshContext(e, e.view.state);
-					return { editorId: e.id, file: e.filePath, mode: e.markdownMode, generation: e.generation };
-				}),
-			repair: (editorId?: string) => {
-				const entry = editorId ? this.registry.getById(editorId) : this.activeEntry(false);
-				return entry ? this.autoRepair.repairNow(entry) : null;
-			},
-			foldLines: (lines: number[], editorId?: string) => {
-				const entry = editorId ? this.registry.getById(editorId) : this.activeEntry(false);
-				return entry ? foldLines(entry.view, lines) : 0;
-			},
-			simulateCorruption: (n = 3, editorId?: string) => {
-				const entry = editorId ? this.registry.getById(editorId) : this.activeEntry(false);
-				return entry ? simulateFoldCorruption(entry.view, n) : 0;
-			},
-			makeShorterFold: (editorId?: string) => {
-				const entry = editorId ? this.registry.getById(editorId) : this.activeEntry(false);
-				return entry ? makeShorterThanStructural(entry.view) : null;
-			},
-			stats: () => this.autoRepair.stats(),
-			settings: () => ({ ...this.settings }),
-			setSetting: async (key: string, value: unknown) => {
-				(this.settings as unknown as Record<string, unknown>)[key] = value;
-				await this.saveSettings();
-				return { ...this.settings };
-			},
-			commands: () => Object.keys((this.app as unknown as { commands: { commands: Record<string, unknown> } }).commands.commands).filter((k) => k.startsWith('fold-rage')),
-		};
+		return this.app.workspace.getActiveViewOfType(MarkdownView)?.leaf ?? null;
 	}
 
 	async loadSettings(): Promise<void> {

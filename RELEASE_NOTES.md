@@ -26,6 +26,11 @@ full exact unfold → restore were all tried against the real broken editor and 
 restore the same corrupt ranges. Only re-deriving each fold from its own start with `foldable()`
 worked.
 
+### Compatibility
+
+Verified against Obsidian 1.5.8, 1.12.4 and 1.13.7. `minAppVersion` is the oldest version actually
+tested, not a guess.
+
 ### Installation
 
 **BRAT — recommended**

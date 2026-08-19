@@ -1,6 +1,6 @@
 {
   "name": "obsidian-fold-rage",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Fold Rage \u2014 Stay in your range. An unofficial workaround for corrupt fold ranges in Obsidian Live Preview.",
   "private": true,
   "main": "main.js",
@@ -8,8 +8,9 @@
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
-    "verify": "npm run build && node test/verify.mjs",
-    "verify:brat": "node test/verify-brat.mjs"
+    "verify": "npm run build:test && node test/verify.mjs",
+    "verify:brat": "node test/verify-brat.mjs",
+    "build:test": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production --test-api"
   },
   "keywords": [
     "obsidian-plugin",
