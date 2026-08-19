@@ -1,5 +1,5 @@
-import { MarkdownView, Notice, Plugin, WorkspaceLeaf } from 'obsidian';
-import { DEFAULT_SETTINGS, FoldRageSettingTab, type FoldRageSettings } from './settings';
+import { MarkdownView, Plugin, WorkspaceLeaf } from 'obsidian';
+import { DEFAULT_SETTINGS, FoldRageSettingTab, normalizeSettings, type FoldRageSettings } from './settings';
 import { EditorRegistry, registryExtension, setActiveRegistry, type EditorEntry } from './registry';
 import { FoldAutoRepair } from './autorepair';
 
@@ -129,7 +129,10 @@ export default class FoldRagePlugin extends Plugin {
 	}
 
 	async loadSettings(): Promise<void> {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		// `loadData()` is typed as `any`; normalizeSettings validates it field by
+		// field so nothing untyped reaches the repair path.
+		const raw: unknown = await this.loadData();
+		this.settings = normalizeSettings(raw);
 	}
 
 	async saveSettings(): Promise<void> {
@@ -137,11 +140,3 @@ export default class FoldRagePlugin extends Plugin {
 	}
 }
 
-function hash(s: string): string {
-	let h = 2166136261;
-	for (let i = 0; i < s.length; i++) {
-		h ^= s.charCodeAt(i);
-		h = Math.imul(h, 16777619);
-	}
-	return (h >>> 0).toString(16).padStart(8, '0');
-}

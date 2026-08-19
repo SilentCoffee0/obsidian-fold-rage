@@ -1,7 +1,7 @@
 {
   "id": "fold-rage",
   "name": "Fold Rage",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "minAppVersion": "1.5.8",
   "description": "Repair Live Preview fold ranges that expand past their Markdown structure and hide unrelated content.",
   "author": "vj",

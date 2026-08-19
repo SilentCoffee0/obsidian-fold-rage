@@ -84,7 +84,7 @@ export class FoldAutoRepair {
 
 	/** Immediate, user-invoked repair of one editor. Bypasses the typing back-off. */
 	repairNow(entry: EditorEntry): RepairResult | null {
-		return this.execute(entry, 'manual', true);
+		return this.execute(entry, true);
 	}
 
 	private run(editorId: string, generation: number, filePath: string | null, trigger: string): void {
@@ -104,14 +104,14 @@ export class FoldAutoRepair {
 			return;
 		}
 
-		this.execute(entry, trigger, false);
+		this.execute(entry, false);
 	}
 
-	private execute(entry: EditorEntry, trigger: string, manual: boolean): RepairResult | null {
+	private execute(entry: EditorEntry, manual: boolean): RepairResult | null {
 		// Only Live Preview / Source editors that are actually displayed. A
 		// Reading-View leaf keeps a CodeMirror instance whose DOM is out of layout;
 		// repairing it there would be pointless work at the wrong moment.
-		if (!manual && (entry.view.dom as HTMLElement).offsetParent === null) return null;
+		if (!manual && entry.view.dom.offsetParent === null) return null;
 
 		let result: RepairResult;
 		try {

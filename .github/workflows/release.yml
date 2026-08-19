@@ -1,0 +1,86 @@
+name: Release
+
+# Releases are built by CI, never from a developer machine, so the published
+# main.js always corresponds exactly to the tagged source. Obsidian's automated
+# review rebuilds the plugin and compares; a hand-uploaded artifact cannot be
+# guaranteed to match.
+on:
+  push:
+    tags:
+      # Obsidian requires the tag to equal the manifest version, so no "v" prefix.
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: write # create the release and upload assets
+  id-token: write # mint the OIDC token Sigstore needs
+  attestations: write # persist the build provenance attestation
+  artifact-metadata: write # create the artifact storage record
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the tagged commit
+        uses: actions/checkout@v7
+        with:
+          # Build exactly what was tagged, nothing else.
+          ref: ${{ github.ref }}
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install from the committed lockfile
+        run: npm ci
+
+      - name: Check the tag matches manifest.json
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="$(node -p "require('./manifest.json').version")"
+          if [ "$TAG" != "$VERSION" ]; then
+            echo "Tag $TAG does not match manifest version $VERSION"
+            exit 1
+          fi
+          echo "Tag and manifest agree on $VERSION"
+
+      - name: Build
+        run: npm run build
+
+      - name: Check the release layout
+        run: npm run verify:brat
+
+      - name: Check the built plugin ships nothing it should not
+        run: |
+          set -e
+          for pattern in simulateCorruption makeShorterFold createTestApi console.log; do
+            if grep -q "$pattern" main.js; then
+              echo "main.js unexpectedly contains: $pattern"
+              exit 1
+            fi
+          done
+          echo "main.js contains no test API and no debug logging"
+
+      - name: Record the artifact digest
+        id: digest
+        run: echo "sha256=$(sha256sum main.js | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+
+      - name: Attest build provenance for main.js
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: main.js
+
+      - name: Publish the release
+        uses: softprops/action-gh-release@v3
+        with:
+          # Only what Obsidian and BRAT install. No zip: the automated review
+          # flags unsupported archives, and BRAT matches assets by exact name.
+          files: |
+            main.js
+            manifest.json
+          fail_on_unmatched_files: true
+          name: Fold Rage ${{ github.ref_name }} — Stay in your range
+          body_path: RELEASE_NOTES.md
+          make_latest: true

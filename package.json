@@ -1,6 +1,6 @@
 {
   "name": "obsidian-fold-rage",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Fold Rage \u2014 Stay in your range. An unofficial workaround for corrupt fold ranges in Obsidian Live Preview.",
   "private": true,
   "main": "main.js",

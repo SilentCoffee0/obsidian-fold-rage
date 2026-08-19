@@ -75,7 +75,6 @@ import { auditFolds, listFoldRanges } from './repair';
 interface TestHost {
 	activeEntry(): { id: string; view: EditorView; filePath: string | null; markdownMode: string | null } | null;
 	settings: object;
-	saveSettings(): Promise<void>;
 	// `App.commands` is not in the public typings; only the test API touches it.
 	app: object;
 }
@@ -148,11 +147,6 @@ export function createTestApi(
 		},
 		stats: () => autoRepair.stats(),
 		settings: () => ({ ...plugin.settings }),
-		setSetting: async (key: string, value: unknown) => {
-			(plugin.settings as Record<string, unknown>)[key] = value;
-			await plugin.saveSettings();
-			return { ...plugin.settings };
-		},
 		commands: () => {
 			const registry = (plugin.app as { commands?: { commands?: Record<string, unknown> } }).commands;
 			return Object.keys(registry?.commands ?? {}).filter((k) => k.startsWith('fold-rage'));

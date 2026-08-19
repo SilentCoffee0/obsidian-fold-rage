@@ -205,6 +205,21 @@ What the evidence supports is an invariant:
 [`FINDINGS.md`](FINDINGS.md) has the technical detail, including the full candidate matrix and which
 common refresh fixes were tried against a genuinely broken editor and failed.
 
+## Releases
+
+Releases are built by GitHub Actions from the tagged commit — `npm ci` against the committed
+lockfile, then the production build — so the published `main.js` always corresponds exactly to the
+tagged source and can be rebuilt byte-for-byte. Each release also carries a
+[build provenance attestation](https://docs.github.com/actions/security-guides/using-artifact-attestations-to-establish-provenance-for-builds)
+for `main.js`, which you can check with:
+
+```bash
+gh attestation verify main.js --repo <USERNAME>/obsidian-fold-rage
+```
+
+Release assets are `main.js` and `manifest.json` only. No archive is attached: Obsidian's automated
+review flags unsupported archives, and BRAT matches assets by exact filename.
+
 ## Compatibility
 
 Verified against Obsidian **1.5.8**, **1.12.4** and **1.13.7** on macOS, by running the full
@@ -213,6 +228,14 @@ rather than a guess.
 
 Desktop and mobile: the plugin uses no Node or Electron APIs, so `isDesktopOnly` is `false`. The
 automated verification runs on desktop only, since it drives a real desktop Obsidian.
+
+### A note on settings search
+
+Obsidian's automated review suggests implementing `PluginSettingTab.getSettingDefinitions()`, which
+powers settings search. That API requires Obsidian 1.13.0 or later, and this plugin supports 1.5.8.
+Adopting it would either drop every user below 1.13.0 or mean maintaining two parallel settings
+implementations for four toggles, so the imperative `display()` implementation stays until the
+supported floor moves past 1.13.0. This is a deliberate compatibility decision, not an oversight.
 
 ## License
 

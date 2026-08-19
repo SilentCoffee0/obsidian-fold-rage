@@ -82,43 +82,55 @@ check(
 	usesCss ? 'present — must also be a release asset' : 'not used — correctly omitted from the release',
 );
 
-// The publish script must upload the assets BRAT needs, under exact names, on a
-// tag equal to the manifest version, and not as a pre-release.
-const publish = fs.readFileSync(path.join(ROOT, 'PUBLISH.sh'), 'utf8');
+// Releases are produced by CI, so the workflow — not a local script — is what
+// determines the published assets.
+const workflow = fs.readFileSync(path.join(ROOT, '.github/workflows/release.yml'), 'utf8');
+const assetBlock = workflow.match(/files:\s*\|([\s\S]*?)\n\s{10}\S/)?.[1] ?? '';
+const assets = assetBlock
+	.split('\n')
+	.map((l) => l.trim())
+	.filter(Boolean);
+check('release workflow uploads main.js', assets.includes('main.js'), `assets: ${assets.join(', ')}`);
+check('release workflow uploads manifest.json', assets.includes('manifest.json'), null);
 check(
-	'publish script uploads main.js as a release asset',
-	/gh release create[\s\S]*?\bmain\.js\b/.test(publish),
+	'release workflow uploads nothing else — no zip',
+	assets.length === 2 && !assets.some((a) => a.endsWith('.zip')),
+	'the automated review flags unsupported archives, and BRAT matches assets by exact name',
+);
+check(
+	'release is built by CI from the tagged commit',
+	/actions\/checkout/.test(workflow) && /npm ci/.test(workflow) && /npm run build/.test(workflow),
+	'checkout + npm ci from the lockfile + production build',
+);
+check(
+	'build provenance is attested for main.js',
+	/attest-build-provenance/.test(workflow) && /subject-path:\s*main\.js/.test(workflow),
+	'with id-token, attestations and artifact-metadata permissions',
+);
+check(
+	'workflow verifies the tag matches the manifest version',
+	/manifest\.json'\)\.version/.test(workflow) || /manifest.json.*version/.test(workflow),
 	null,
 );
 check(
-	'publish script uploads manifest.json as a release asset',
-	/gh release create[\s\S]*?\bmanifest\.json\b/.test(publish),
-	null,
+	'workflow only triggers on version-shaped tags with no v prefix',
+	/tags:[\s\S]*?\[0-9\]\+\.\[0-9\]\+\.\[0-9\]\+/.test(workflow),
+	'Obsidian requires the release tag to equal the manifest version exactly',
 );
-const tagMatch = publish.match(/gh release create\s+"?\$?\{?TAG\}?"?|TAG="([^"]+)"/);
-const tag = publish.match(/^TAG="([^"]+)"/m)?.[1] ?? null;
-const tagCoerces = !!tag && tag.replace(/^v/, '') === manifest.version;
 check(
-	'release tag corresponds to the manifest version',
-	tagCoerces,
-	tag === manifest.version
-		? `tag "${tag}" matches exactly`
-		: `tag "${tag}" vs manifest "${manifest.version}" — BRAT lets the tag override the manifest ` +
-			'version, so the plugin will report "' + tag + '". semver-coerced update comparison still works.',
+	'release is not marked as a pre-release',
+	!/prerelease:\s*true/.test(workflow),
+	'BRAT skips pre-releases by default',
 );
-void tagMatch;
-check('release is not marked as a pre-release', !/--prerelease/.test(publish), 'BRAT skips pre-releases by default');
-check(
-	'no styles.css referenced in the release',
-	!/styles\.css/.test(publish),
-	'the plugin ships no CSS',
-);
+check('no styles.css in the release', !assets.includes('styles.css'), 'the plugin ships no CSS');
 
+// A local zip is still handy for hand-installing, but it is deliberately not a
+// release asset any more.
 const zip = path.join(ROOT, 'dist', `${manifest.id}-${manifest.version}.zip`);
 check(
-	'manual-install ZIP built',
-	fs.existsSync(zip),
-	fs.existsSync(zip) ? `${path.relative(ROOT, zip)} (ignored by BRAT, used for manual installs)` : 'missing',
+	'local convenience ZIP is not a release asset',
+	!assets.some((a) => a.endsWith('.zip')),
+	fs.existsSync(zip) ? `${path.relative(ROOT, zip)} exists locally only` : 'no local zip built',
 );
 
 async function remote(repo) {

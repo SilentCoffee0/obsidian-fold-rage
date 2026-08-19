@@ -18,6 +18,40 @@ export interface FoldRageSettings {
 	enableTestApi: boolean;
 }
 
+/** Narrowing guard, so no type assertion is needed to read unknown data. */
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === 'object' && value !== null;
+}
+
+function asBoolean(value: unknown, fallback: boolean): boolean {
+	return typeof value === 'boolean' ? value : fallback;
+}
+
+function asDelay(value: unknown, fallback: number): number {
+	return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1000
+		? Math.round(value)
+		: fallback;
+}
+
+/**
+ * Build settings from whatever `Plugin.loadData()` returns.
+ *
+ * `loadData()` is typed as `any`, so assigning its result straight into a typed
+ * field is an unsafe assignment. Validating each field keeps the types honest,
+ * and means a hand-edited or corrupted data.json degrades to defaults rather
+ * than putting a bad value into the repair path.
+ */
+export function normalizeSettings(raw: unknown): FoldRageSettings {
+	if (!isRecord(raw)) return { ...DEFAULT_SETTINGS };
+	return {
+		autoRepair: asBoolean(raw.autoRepair, DEFAULT_SETTINGS.autoRepair),
+		repairDelayMs: asDelay(raw.repairDelayMs, DEFAULT_SETTINGS.repairDelayMs),
+		showNotifications: asBoolean(raw.showNotifications, DEFAULT_SETTINGS.showNotifications),
+		showSessionCounter: asBoolean(raw.showSessionCounter, DEFAULT_SETTINGS.showSessionCounter),
+		enableTestApi: asBoolean(raw.enableTestApi, DEFAULT_SETTINGS.enableTestApi),
+	};
+}
+
 export const DEFAULT_SETTINGS: FoldRageSettings = {
 	autoRepair: true,
 	repairDelayMs: 150,
@@ -26,6 +60,17 @@ export const DEFAULT_SETTINGS: FoldRageSettings = {
 	enableTestApi: false,
 };
 
+/**
+ * Settings are declared imperatively in `display()` on purpose.
+ *
+ * Obsidian's automated review suggests `getSettingDefinitions()`, which powers
+ * settings search. That API requires Obsidian 1.13.0 or later, while Fold Rage
+ * declares `minAppVersion` 1.5.8 — a floor established by actually running the
+ * verification suite against 1.5.8, 1.12.4 and 1.13.7. Adopting it would either
+ * drop every user below 1.13.0 or mean maintaining two parallel settings
+ * implementations for four toggles, so the imperative form stays until the
+ * supported floor moves past 1.13.0.
+ */
 export class FoldRageSettingTab extends PluginSettingTab {
 	constructor(app: App, private plugin: FoldRagePlugin) {
 		super(app, plugin);
@@ -55,7 +100,6 @@ export class FoldRageSettingTab extends PluginSettingTab {
 				s
 					.setLimits(0, 1000, 50)
 					.setValue(this.plugin.settings.repairDelayMs)
-					.setDynamicTooltip()
 					.onChange(async (v) => {
 						this.plugin.settings.repairDelayMs = v;
 						await this.plugin.saveSettings();
