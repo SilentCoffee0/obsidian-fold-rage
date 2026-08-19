@@ -214,7 +214,7 @@ tagged source and can be rebuilt byte-for-byte. Each release also carries a
 for `main.js`, which you can check with:
 
 ```bash
-gh attestation verify main.js --repo <USERNAME>/obsidian-fold-rage
+gh attestation verify main.js --repo SilentCoffee0/obsidian-fold-rage
 ```
 
 Release assets are `main.js` and `manifest.json` only. No archive is attached: Obsidian's automated
