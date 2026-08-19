@@ -47,10 +47,17 @@ commonly suggested "unfold and refold" workaround is unreliable.
 
 What worked was re-deriving each fold from its own existing start using `foldable()` and shrinking
 any fold whose stored end reached past its current structural boundary. On the real broken editor
-that restored rendering immediately, with the fold count and the note text unchanged. I verified all
-of it against a real Obsidian instance rather than a simulation.
+that restored rendering immediately, with the fold count and the note text unchanged.
+
+The repair is deliberately conservative: it can only ever **shrink** a fold, never expand one; it
+only acts on the proven end-of-document overreach signature; it leaves healthy folds and
+legitimately shorter folds completely alone; and if the structural range can't be determined it does
+nothing rather than guessing.
 
 ## Links
+
+Community Directory:
+https://community.obsidian.md/plugins/fold-rage
 
 GitHub:
 https://github.com/SilentCoffee0/obsidian-fold-rage
@@ -58,11 +65,20 @@ https://github.com/SilentCoffee0/obsidian-fold-rage
 Findings:
 https://github.com/SilentCoffee0/obsidian-fold-rage/blob/main/FINDINGS.md
 
-Release:
-https://github.com/SilentCoffee0/obsidian-fold-rage/releases/tag/v0.1.0
+Release (0.1.2):
+https://github.com/SilentCoffee0/obsidian-fold-rage/releases/tag/0.1.2
 
-If anyone affected wants to try the workaround, it can also be installed through BRAT by adding the
-GitHub repository URL.
+The directory page has an **Add to Obsidian** button. It may not show up in the in-app Community
+Plugins search yet while the listing settles — if anyone affected wants to try it in the meantime, it
+also installs through BRAT by adding the GitHub repository URL.
+
+On the verification side, since this is a plugin that mutates fold state I wanted it to be checkable
+rather than trusted: the regression suite runs 18/18 checks against a real Obsidian instance (not a
+simulation), releases are built by CI from the tagged commit and are byte-for-byte reproducible, and
+`main.js` carries a GitHub build-provenance attestation. The Community Directory's automated review
+passes on release provenance, network requests, dependencies, code obfuscation and build
+verification. The one note it still shows is a legacy settings-API warning, which I've kept
+deliberately so the plugin can continue to support Obsidian 1.5.8+.
 
 ## For the devs
 

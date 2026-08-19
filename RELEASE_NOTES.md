@@ -33,7 +33,13 @@ tested, not a guess.
 
 ### Installation
 
-**BRAT — recommended**
+**Community Directory**
+
+https://community.obsidian.md/plugins/fold-rage — use the **Add to Obsidian** button. If it is not
+yet visible in your in-app Community Plugins search, the listing may still be propagating; use the
+button above or BRAT in the meantime.
+
+**BRAT**
 
 Install and enable [BRAT](https://github.com/TfTHacker/obsidian42-brat), run
 `BRAT: Plugins: Add a beta plugin for testing` from the Command Palette, and paste:
@@ -46,7 +52,7 @@ BRAT also makes receiving future releases easy.
 
 **Manual**
 
-Download `main.js` and `manifest.json` below (or the `.zip`) and place them in:
+Download `main.js` and `manifest.json` from the assets below and place them in:
 
 ```
 <Vault>/.obsidian/plugins/fold-rage/

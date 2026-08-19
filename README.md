@@ -54,35 +54,46 @@ know it is installed.
 
 ## Install
 
-### Install with BRAT — recommended
+### Community Directory
+
+Fold Rage's official Community Directory page:
+
+**https://community.obsidian.md/plugins/fold-rage**
+
+Use the **Add to Obsidian** button on that page to install it.
+
+> If Fold Rage is not yet visible in your in-app Community Plugins search, the directory listing may
+> still be propagating/reviewing. Use the Add to Obsidian button above or BRAT in the meantime.
+
+### Install with BRAT
 
 [BRAT](https://github.com/TfTHacker/obsidian42-brat) installs plugins straight from GitHub and makes
-receiving new releases easy, so you never have to download anything by hand.
+receiving new releases easy. It is a reliable alternative to the directory.
 
 1. Install **BRAT** from Obsidian Community Plugins.
 2. Enable BRAT.
-3. Open the Command Palette.
-4. Run:
+3. Open the Command Palette and run:
 
    ```
    BRAT: Plugins: Add a beta plugin for testing
    ```
 
-5. Paste:
+4. Paste:
 
    ```
    https://github.com/SilentCoffee0/obsidian-fold-rage
    ```
 
-6. Add / install the plugin.
-7. Enable **Fold Rage** under Settings → Community plugins.
+5. Add / install the plugin.
+6. Enable **Fold Rage** under Settings → Community plugins.
 
 BRAT also handles updates: when a new release is published here, BRAT can pull it in automatically at
 startup, or on demand with `BRAT: Plugins: Check for updates to all beta plugins and UPDATE`.
 
 ### Manual installation
 
-Download the latest [release](../../releases/latest) and copy:
+Download from the current release —
+[0.1.2](https://github.com/SilentCoffee0/obsidian-fold-rage/releases/tag/0.1.2) — and copy:
 
 ```
 main.js
