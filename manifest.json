@@ -1,0 +1,9 @@
+{
+  "id": "fold-rage",
+  "name": "Fold Rage",
+  "version": "0.1.0",
+  "minAppVersion": "1.5.7",
+  "description": "Stay in your range. Repairs Obsidian Live Preview fold ranges that expand past their Markdown structure and hide unrelated content.",
+  "author": "vj",
+  "isDesktopOnly": false
+}
