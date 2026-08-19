@@ -34,7 +34,7 @@ Install and enable [BRAT](https://github.com/TfTHacker/obsidian42-brat), run
 `BRAT: Plugins: Add a beta plugin for testing` from the Command Palette, and paste:
 
 ```
-https://github.com/<USERNAME>/obsidian-fold-rage
+https://github.com/SilentCoffee0/obsidian-fold-rage
 ```
 
 BRAT also makes receiving future releases easy.
@@ -53,5 +53,5 @@ Reload Obsidian and enable **Fold Rage** under Community plugins.
 
 The proper solution ultimately belongs in Obsidian core. This plugin is intended as a conservative
 workaround and executable reference implementation. See
-[FINDINGS.md](https://github.com/<USERNAME>/obsidian-fold-rage/blob/main/FINDINGS.md) for the full
+[FINDINGS.md](https://github.com/SilentCoffee0/obsidian-fold-rage/blob/main/FINDINGS.md) for the full
 technical detail and the suggested core-side invariant.

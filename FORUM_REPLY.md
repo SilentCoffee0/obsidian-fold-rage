@@ -53,13 +53,13 @@ of it against a real Obsidian instance rather than a simulation.
 ## Links
 
 GitHub:
-https://github.com/<USERNAME>/obsidian-fold-rage
+https://github.com/SilentCoffee0/obsidian-fold-rage
 
 Findings:
-https://github.com/<USERNAME>/obsidian-fold-rage/blob/main/FINDINGS.md
+https://github.com/SilentCoffee0/obsidian-fold-rage/blob/main/FINDINGS.md
 
 Release:
-https://github.com/<USERNAME>/obsidian-fold-rage/releases/tag/v0.1.0
+https://github.com/SilentCoffee0/obsidian-fold-rage/releases/tag/v0.1.0
 
 If anyone affected wants to try the workaround, it can also be installed through BRAT by adding the
 GitHub repository URL.

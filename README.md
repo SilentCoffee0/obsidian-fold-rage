@@ -71,7 +71,7 @@ receiving new releases easy, so you never have to download anything by hand.
 5. Paste:
 
    ```
-   https://github.com/<USERNAME>/obsidian-fold-rage
+   https://github.com/SilentCoffee0/obsidian-fold-rage
    ```
 
 6. Add / install the plugin.
@@ -184,7 +184,7 @@ requirements come from BRAT's source rather than its documentation, which does n
 After publishing, verify the live release with:
 
 ```bash
-node test/verify-brat.mjs --repo=<USERNAME>/obsidian-fold-rage
+node test/verify-brat.mjs --repo=SilentCoffee0/obsidian-fold-rage
 ```
 
 ## Note for the Obsidian core team
