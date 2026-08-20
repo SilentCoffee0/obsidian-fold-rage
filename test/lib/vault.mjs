@@ -22,6 +22,11 @@ export function buildVault(root, { pluginDir }) {
 	for (const f of fs.readdirSync(FIXTURES)) {
 		fs.copyFileSync(path.join(FIXTURES, f), path.join(vault, f));
 	}
+	// Local, git-ignored fixtures for diagnosing a specific report.
+	const local = path.join(HERE, '..', '..', '.local-fixtures');
+	if (fs.existsSync(local)) {
+		for (const f of fs.readdirSync(local)) fs.copyFileSync(path.join(local, f), path.join(vault, f));
+	}
 	fs.writeFileSync(path.join(vault, 'other-note.md'), '# Other note\n\nUsed to navigate away and back.\n');
 
 	const cfg = path.join(vault, '.obsidian');

@@ -3,3 +3,4 @@ main.js
 *.log
 .test-vault/
 dist/
+.local-fixtures/

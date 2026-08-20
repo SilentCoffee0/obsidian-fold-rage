@@ -46,6 +46,72 @@ export function simulateFoldCorruption(view: EditorView, count = 3): number {
 }
 
 /**
+ * Reproduce ONE Obsidian fold-restore cycle, faithfully.
+ *
+ * Obsidian restores each saved fold as, in effect:
+ *
+ *     foldEffect.of({ from, to: Math.max(foldable(...).to, savedEndLine.to) })
+ *
+ * The saved end line comes from the CURRENT fold state, so a fold that has been
+ * widened once is saved wider and re-applied wider on the next cycle. Repeating
+ * this is what makes the damage accumulate across Reading <-> Editing switches —
+ * and, crucially, it can widen a fold to a mid-document line rather than always
+ * to the end of the document.
+ */
+export function simulateRestoreCycle(view: EditorView): number {
+	const state = view.state;
+	const doc = state.doc;
+	const saved: { fromLine: number; toLine: number }[] = [];
+	const cursor = foldedRanges(state).iter();
+	while (cursor.value !== null) {
+		saved.push({
+			fromLine: doc.lineAt(Math.min(cursor.from, doc.length)).number,
+			toLine: doc.lineAt(Math.min(cursor.to, doc.length)).number,
+		});
+		cursor.next();
+	}
+	if (!saved.length) return 0;
+
+	const effects = [];
+	for (const f of saved) {
+		const startLine = doc.line(f.fromLine);
+		const endLine = doc.line(Math.min(f.toLine, doc.lines));
+		const structural = foldable(state, startLine.from, startLine.to);
+		if (!structural) continue;
+		effects.push(unfoldEffect.of({ from: structural.from, to: structural.to }));
+		effects.push(foldEffect.of({ from: structural.from, to: Math.max(structural.to, endLine.to) }));
+	}
+	if (effects.length) view.dispatch({ effects, scrollIntoView: false });
+	return effects.length / 2;
+}
+
+/**
+ * Widen a fold to a MID-document boundary rather than the end of the document,
+ * which is what a cascading restore can produce.
+ */
+export function corruptToMidDocument(view: EditorView, count = 3): number {
+	const doc = view.state.doc;
+	const targets: { from: number; to: number }[] = [];
+	const cursor = foldedRanges(view.state).iter();
+	while (cursor.value !== null && targets.length < count) {
+		targets.push({ from: cursor.from, to: cursor.to });
+		cursor.next();
+	}
+	if (!targets.length) return 0;
+	const mid = Math.floor(doc.length * 0.6);
+	const widened = targets.filter((r) => r.to < mid);
+	if (!widened.length) return 0;
+	view.dispatch({
+		effects: [
+			...widened.map((r) => unfoldEffect.of(r)),
+			...widened.map((r) => foldEffect.of({ from: r.from, to: mid })),
+		],
+		scrollIntoView: false,
+	});
+	return widened.length;
+}
+
+/**
  * Shrink a fold to LESS than its structural range — a legitimately shorter fold.
  * The repair must leave this completely alone.
  */
@@ -70,7 +136,7 @@ export function makeShorterThanStructural(view: EditorView): { from: number; to:
 // as `false`, so main.ts never imports this module and esbuild does not bundle it.
 
 import type { EditorRegistry } from './registry';
-import { auditFolds, listFoldRanges } from './repair';
+import { auditFolds, explainFolds, listFoldRanges } from './repair';
 
 interface TestHost {
 	activeEntry(): { id: string; view: EditorView; filePath: string | null; markdownMode: string | null } | null;
@@ -140,6 +206,18 @@ export function createTestApi(
 		simulateCorruption: (n = 3, editorId?: string) => {
 			const entry = resolve(editorId);
 			return entry ? simulateFoldCorruption(entry.view, n) : 0;
+		},
+		restoreCycle: (editorId?: string) => {
+			const entry = resolve(editorId);
+			return entry ? simulateRestoreCycle(entry.view) : 0;
+		},
+		corruptMid: (n = 3, editorId?: string) => {
+			const entry = resolve(editorId);
+			return entry ? corruptToMidDocument(entry.view, n) : 0;
+		},
+		explain: (editorId?: string) => {
+			const entry = resolve(editorId);
+			return entry ? explainFolds(entry.view.state) : null;
 		},
 		makeShorterFold: (editorId?: string) => {
 			const entry = resolve(editorId);

@@ -151,6 +151,35 @@ async function main() {
 			auto.docHash === healthy.docHash,
 			`hash ${auto.docHash}`,
 		);
+		// 4b — a fold widened to a MID-DOCUMENT boundary, not the end of the file.
+		//      An earlier build gated the repair on "reaches the end of the
+		//      document" and silently ignored these, which showed up in real use as
+		//      "it repaired some folds but not all".
+		await api(cdp, 'foldLines', topLevel);
+		await sleep(300);
+		const midInjected = await api(cdp, 'corruptMid', 3);
+		await sleep(400);
+		const midCorrupt = await api(cdp, 'audit');
+		const midRepair = await api(cdp, 'repair');
+		await sleep(400);
+		const midFixed = await api(cdp, 'audit');
+		check(
+			'mid-document over-reach is detected and repaired',
+			midInjected > 0 && midCorrupt.overReaching > 0 && midRepair?.repaired > 0 && midFixed.overReaching === 0,
+			`injected ${midInjected}; ${midCorrupt.overReaching} flagged; repaired ${midRepair?.repaired}; ` +
+				`${midFixed.overReaching} remain; rendered ${midCorrupt.renderedLines} → ${midFixed.renderedLines}`,
+		);
+		check(
+			'no fold exceeds its structural range afterwards',
+			(await api(cdp, 'explain')).filter((f) => f.structuralTo !== null && f.to > f.structuralTo).length === 0,
+			'checked every fold, not just the ones reaching the document end',
+		);
+		check(
+			'note text unchanged by the mid-document repair',
+			midFixed.docHash === healthy.docHash,
+			`hash ${midFixed.docHash}`,
+		);
+
 		// 5 — a legitimately SHORTER fold must never be touched.
 		const shortened = await api(cdp, 'makeShorterFold');
 		await sleep(300);

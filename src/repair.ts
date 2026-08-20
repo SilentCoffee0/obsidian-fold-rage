@@ -24,10 +24,10 @@ import { foldable, foldEffect, foldedRanges, unfoldEffect } from '@codemirror/la
  *
  *   1. It can only ever SHRINK a fold. Expanding one is unreachable by
  *      construction: a candidate requires `stored.to > structural.to`.
- *   2. It targets the proven overreach signature specifically, not merely
- *      "stored end differs from structural end". A fold that is legitimately
- *      SHORTER than its structural range is left alone, because Obsidian's own
- *      restore path can legitimately produce one.
+ *   2. It only ever acts on a fold that reaches PAST its structural range, i.e.
+ *      one that is hiding content belonging to the document outside it. A fold
+ *      that is SHORTER than its structural range is left alone, because
+ *      Obsidian's own restore path can legitimately produce one.
  *   3. Nesting is never treated as evidence. A parent fold containing child
  *      folds is completely normal, so "swallows a later fold" is deliberately
  *      NOT a trigger.
@@ -56,19 +56,6 @@ export interface FoldAudit {
 }
 
 /**
- * Does this fold end at the very end of the document?
- *
- * That is the signature every corrupt fold in the captures had. The threshold is
- * tolerant of the trailing newline: when a note ends with one, the last line
- * starts at `doc.length` while the corrupt folds ended at `doc.length - 1`.
- */
-function reachesDocumentEnd(state: EditorState, to: number): boolean {
-	const doc = state.doc;
-	const lastLineStart = doc.line(doc.lines).from;
-	return to >= Math.min(lastLineStart, Math.max(0, doc.length - 1));
-}
-
-/**
  * Compare every fold against what its own start line can structurally fold, and
  * report only the ones matching the proven overreach signature.
  */
@@ -88,9 +75,6 @@ export function auditFolds(state: EditorState): FoldAudit {
 
 		// A fold that starts on the last line has nothing after it to swallow.
 		if (from >= lastLineStart) continue;
-		// Signature gate: the observed corruption always ran to the end of the
-		// document. Anything else is left alone rather than guessed at.
-		if (!reachesDocumentEnd(state, to)) continue;
 
 		let structural: { from: number; to: number } | null = null;
 		try {
@@ -141,6 +125,55 @@ export function listFoldRanges(state: EditorState): { from: number; to: number }
 	while (cursor.value !== null) {
 		out.push({ from: cursor.from, to: cursor.to });
 		cursor.next();
+	}
+	return out;
+}
+
+/**
+ * Diagnostic view of every fold and the exact reason it was or was not treated
+ * as a correction candidate. Used by the repository's tooling; the plugin's
+ * runtime never calls it.
+ */
+export type FoldVerdict =
+	| 'correct'
+	| 'healthy'
+	| 'shorter-than-structural'
+	| 'no-structural-range'
+	| 'starts-on-last-line';
+
+export interface FoldExplanation {
+	fromLine: number;
+	toLine: number;
+	to: number;
+	structuralTo: number | null;
+	verdict: FoldVerdict;
+}
+
+export function explainFolds(state: EditorState): FoldExplanation[] {
+	const doc = state.doc;
+	const lastLineStart = doc.line(doc.lines).from;
+	const out: FoldExplanation[] = [];
+	const cursor = foldedRanges(state).iter();
+	while (cursor.value !== null) {
+		const from = cursor.from;
+		const to = cursor.to;
+		cursor.next();
+		const fromLine = doc.lineAt(Math.min(from, doc.length)).number;
+		const toLine = doc.lineAt(Math.min(to, doc.length)).number;
+		let structuralTo: number | null = null;
+		try {
+			const line = doc.lineAt(Math.min(from, doc.length));
+			structuralTo = foldable(state, line.from, line.to)?.to ?? null;
+		} catch {
+			structuralTo = null;
+		}
+		let verdict: FoldVerdict;
+		if (from >= lastLineStart) verdict = 'starts-on-last-line';
+		else if (structuralTo === null) verdict = 'no-structural-range';
+		else if (to > structuralTo) verdict = 'correct';
+		else if (to < structuralTo) verdict = 'shorter-than-structural';
+		else verdict = 'healthy';
+		out.push({ fromLine, toLine, to, structuralTo, verdict });
 	}
 	return out;
 }

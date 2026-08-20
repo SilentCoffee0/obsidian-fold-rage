@@ -3,6 +3,13 @@ Preview folding bug.
 
 **Stay in your range.**
 
+### Fixed in 0.1.3
+
+Folds whose end had expanded to a **mid-document** boundary — rather than all the way to the end of
+the file — were silently ignored, so on deeply nested notes the plugin repaired some folds but not
+all. The repair now acts on any fold reaching past its own structural range, whatever the distance.
+It remains shrink-only and still leaves healthy and legitimately shorter folds untouched.
+
 ### What it does
 
 - automatically detects over-reaching corrupt folds
